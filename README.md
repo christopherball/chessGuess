@@ -1,9 +1,9 @@
 This program is designed for very custom self-study chess needs from books.  The goal of this program is to automatically analyze real chess games and conflate them with guess-the-moves along-side, producing a CSV output for further analysis and charting.  
 
 **Dependencies:**  
-For MAC...
-python3 -m pip install --force-reinstall chess
-brew install stockfish
+For MAC...  
+python3 -m pip install --force-reinstall chess  
+brew install stockfish  
 
 **Example commands:**  
 (Verbose)  
