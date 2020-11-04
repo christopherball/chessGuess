@@ -5,7 +5,7 @@ This program is designed for custom "guess the move" self-study chess needs from
 For example purposes, this code base includes the first 5 games (in pgn format) from the book "Logical Chess Move By Move" by Chernev, alongside 5 example "guess" files signaling the formatting requirements.  Upon execution, results are generated in the `./output` folder.
 
 **Dependencies (Required):**  
-`python3 -m pip install --force-reinstall chess`  
+`python3 -m pip install --force-reinstall chess==1.2.2`  
 
 **Dependencies (Optional):**  
 Stockfish 12 has been bundled with the code, but can be referenced locally if preferred.  For MAC users (if so desired):  
