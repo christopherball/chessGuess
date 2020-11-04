@@ -1,19 +1,19 @@
-This program is designed for very custom self-study chess needs from books.  The goal of this program is to automatically analyze real chess games and conflate them with guess-the-moves along-side, producing a CSV output for further analysis and charting.
+This program is designed for very custom self-study chess needs from books.  The goal of this program is to automatically analyze real chess games and conflate them with guess-the-moves along-side, producing a CSV output for further analysis and charting.  
 
-**Dependencies:**
+**Dependencies:**  
 For MAC...
 python3 -m pip install --force-reinstall chess
 brew install stockfish
 
-**Example commands:**
-(Verbose) 
+**Example commands:**  
+(Verbose)  
 python3 chessguess.py pgn:pgn/logical_chess_game_1.pgn guess:guess/logical_chess_game_1.guess
 
-(Short-cut) 
-./analyze logical_chess_game_1
+(Short-cut)  
+./analyze logical_chess_game_1  
 
-**Output:**
-Results in a CSV summary report comparing your move, to the hero, to the engine choice...
+**Output:**  
+Results in a CSV summary report comparing your move, to the hero, to the engine choice...  
 
 |DatePlayed|GameIdentifier              |PlayAs|MoveNum|GuessMove|ActualMove|BestMove|GuessScore|ActualScore|BestScore|GuessMate|ActualMate|BestMate|PreGuessBoardFEN                                                    |PostGuessBoardFEN                                                 |PostActualBoardFEN                                                  |
 |----------|----------------------------|------|-------|---------|----------|--------|----------|-----------|---------|---------|----------|--------|--------------------------------------------------------------------|------------------------------------------------------------------|--------------------------------------------------------------------|
