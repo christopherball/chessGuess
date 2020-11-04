@@ -213,8 +213,8 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 
 # Entry point method
 def main():
-    # Start chess engine process
-    engine = chess.engine.SimpleEngine.popen_uci("/usr/local/bin/stockfish")
+    # Start chess engine process (optionally from local install such as: /usr/local/bin/stockfish)
+    engine = chess.engine.SimpleEngine.popen_uci("./bin/stockfish")
 
     # Initialize specified engine
     engine.configure({"Threads":2, "Hash": 4096})
