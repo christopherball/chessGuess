@@ -1,18 +1,21 @@
-This program is designed for very custom self-study chess needs from books and other resources.  The goal of this program is to automatically analyze real chess games of high-level play, comparing your guesses, from the perspective of the winner, at each step of the way (starting after the opening), producing a CSV output for further analysis and charting.  
+# Chess Guess  
+
+This program is designed for custom "guess the move" self-study chess needs from books and other resources.  The goal of this program is to automatically analyze real chess games of high-level play, comparing your guesses with the winner's choices alongside engine top choices, producing a CSV output for further analysis and charting.  
+
 For example purposes, this code base includes the first 5 games (in pgn format) from the book "Logical Chess Move By Move" by Chernev, alongside 5 example "guess" files signaling the formatting requirements.  Upon execution, results are generated in the `./output` folder.
 
 **Dependencies (Required):**  
 `python3 -m pip install --force-reinstall chess`  
 
 **Dependencies (Optional):**  
-Stockfish 12 has been bundled with the code, but can be referenced locally if preferred.  For MAC users, one can install the latest stockfish binaries via:  
+Stockfish 12 has been bundled with the code, but can be referenced locally if preferred.  For MAC users (if so desired):  
 `brew install stockfish`  
 
 **Example commands:**  
 (Verbose)  
 `python3 chessguess.py pgn:pgn/logical_chess_game_1.pgn guess:guess/logical_chess_game_1.guess`
 
-(Short-cut)  
+(Shortcut)  
 `./analyze logical_chess_game_1`  
 
 **Output:**  
