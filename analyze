@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ $1 = "all" ]; then
+    trap "exit" INT
+    for entry in `ls ./guess`; do
+        baseFile=${entry%.*}
+        echo 'Processing: ' $baseFile
+        python3 chessguess.py pgn:pgn/$baseFile.pgn guess:guess/$baseFile.guess
+    done
+else
+    python3 chessguess.py pgn:pgn/$1.pgn guess:guess/$1.guess
+fi
