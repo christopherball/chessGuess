@@ -106,7 +106,7 @@ def main():
                                 score = "#" + str(info[i]["score"].relative.mate()) if info[i]["score"].turn else "#" + str(info[i]["score"].relative.mate() * -1)
                             
                             trimmedVariations = itertools.islice(info[i]["pv"], 1) # Increase 1 if you want to show more moves beyond candidate move.
-                            print(board.variation_san(trimmedVariations) + "\t(" + str(score) + ")")
+                            print("{:-<12s}> {:<10s}".format(board.variation_san(trimmedVariations) + " ", "(" + str(score) + ")"))
                     
                     if (winner == chess.WHITE and cycleNum == 0):
                         board.push(move)
