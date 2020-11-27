@@ -25,6 +25,28 @@ def parseWinner(game):
     else:
         return None
 
+def printHeader(game):
+    print("-----------------------------------------")
+    if game.headers["Event"] != None and game.headers["Event"] != "":
+        print("Event: " + game.headers["Event"])
+    if game.headers["Site"] != None and game.headers["Site"] != "":
+        print("Site: " + game.headers["Site"])
+    if game.headers["Date"] != None and game.headers["Date"] != "":
+        print("Date: " + game.headers["Date"])
+    if game.headers["Round"] != None and game.headers["Round"] != "":
+        print("Round: " + game.headers["Round"])
+    if game.headers["White"] != None and game.headers["White"] != "":
+        print("White: " + game.headers["White"])
+    if game.headers["Black"] != None and game.headers["Black"] != "":
+        print("Black: " + game.headers["Black"])
+    if game.headers["Result"] != None and game.headers["Result"] != "":
+        print("Result: " + game.headers["Result"])
+    if game.headers["ECO"] != None and game.headers["ECO"] != "":
+        print("ECO: " + game.headers["ECO"])
+    if game.headers["PlyCount"] != None and game.headers["PlyCount"] != "":
+        print("PlyCount: " + game.headers["PlyCount"])
+    print("-----------------------------------------")
+
 def getMovePrefix(cycleNum):
     if cycleNum % 2 != 0:
         return str(int(cycleNum / 2 + 0.5)) + "..."
@@ -46,6 +68,8 @@ def main():
         mainLineMoves.append(move)
 
     if winner != None:
+        printHeader(game)
+
         for move in mainLineMoves:
             board.push(move)
             if not board.is_game_over():
@@ -55,7 +79,8 @@ def main():
                         print(getMovePrefix(cycleNum) + board.san(board.pop()))
                     # Else If it's whites' turn for a black winner game
                     elif (winner == chess.BLACK and cycleNum % 2 == 0): 
-                        print()
+                        if cycleNum > 0:
+                            print()
                         print(getMovePrefix(cycleNum) + board.san(board.pop()))
                         board.push(move)
 
@@ -71,7 +96,7 @@ def main():
                             print(getMovePrefix(cycleNum + 1) + board.san(mainLineMoves[cycleNum + 1]))
 
                     # Analyze the board for the next best move
-                    info = engine.analyse(board, chess.engine.Limit(depth=20), multipv=3)
+                    info = engine.analyse(board, chess.engine.Limit(depth=22), multipv=3)
 
                     if cycleNum < len(mainLineMoves):
                         for i in range(0, len(info)):
@@ -81,7 +106,7 @@ def main():
                                 score = "#" + str(info[i]["score"].relative.mate()) if info[i]["score"].turn else "#" + str(info[i]["score"].relative.mate() * -1)
                             
                             trimmedVariations = itertools.islice(info[i]["pv"], 1) # Increase 1 if you want to show more moves beyond candidate move.
-                            print(board.variation_san(trimmedVariations) + " (" + str(score) + ")")
+                            print(board.variation_san(trimmedVariations) + "\t(" + str(score) + ")")
                     
                     if (winner == chess.WHITE and cycleNum == 0):
                         board.push(move)
