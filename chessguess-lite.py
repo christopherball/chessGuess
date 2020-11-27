@@ -25,6 +25,12 @@ def parseWinner(game):
     else:
         return None
 
+def getMovePrefix(cycleNum):
+    if cycleNum % 2 != 0:
+        return str(int(cycleNum / 2 + 0.5)) + "..."
+    else:
+        return str(int(cycleNum / 2 + 1)) + ". "
+
 def main():
     # Start chess engine process (optionally from local install such as: /usr/local/bin/stockfish)
     engine = chess.engine.SimpleEngine.popen_uci("./bin/stockfish")
@@ -34,7 +40,7 @@ def main():
     game = chess.pgn.read_game(pgn)
     board = game.board()
     winner = parseWinner(game)
-    cycleNum = 1
+    cycleNum = 0
     mainLineMoves = []
     for move in game.mainline_moves():
         mainLineMoves.append(move)
@@ -42,25 +48,44 @@ def main():
     if winner != None:
         for move in mainLineMoves:
             board.push(move)
+            if not board.is_game_over():
+                if ((winner == chess.WHITE and cycleNum == 0) or (winner == chess.WHITE and cycleNum % 2 != 0) or (winner == chess.BLACK and cycleNum % 2 == 0)):
+                    # If it's whites' first move for a white winner game
+                    if (winner == chess.WHITE and cycleNum == 0):
+                        print(getMovePrefix(cycleNum) + board.san(board.pop()))
+                    # Else If it's whites' turn for a black winner game
+                    elif (winner == chess.BLACK and cycleNum % 2 == 0): 
+                        print()
+                        print(getMovePrefix(cycleNum) + board.san(board.pop()))
+                        board.push(move)
 
-            if not board.is_game_over(): #and ((winner == chess.WHITE and cycleNum % 2 != 0) or (winner == chess.BLACK and cycleNum % 2 == 0)):
-                info = engine.analyse(board, chess.engine.Limit(depth=20), multipv=3)
-                comment = ""
-
-                if cycleNum < len(mainLineMoves):
-                    print()
-                    print(board.fen())
-                    print(board.san(mainLineMoves[cycleNum]))
-
-                    for i in range(0, len(info)):
-                        if info[i]["score"].relative.score() != None:
-                            score = info[i]["score"].relative.score() / 100.0 if info[i]["score"].turn else info[i]["score"].relative.score() / -100.0
-                        else:
-                            score = "Mate in " + str(info[i]["score"].relative.mate()) if info[i]["score"].turn else "Mate in " + str(info[i]["score"].relative.mate() * -1)
+                        if cycleNum < len(mainLineMoves) - 1:
+                            print(getMovePrefix(cycleNum + 1) + board.san(mainLineMoves[cycleNum + 1]))
+                    # Else If it's blacks' turn for a white winner game
+                    elif (winner == chess.WHITE and cycleNum % 2 != 0): 
+                        print(getMovePrefix(cycleNum) + board.san(board.pop()))
+                        board.push(move)
                         
-                        firstFiveVariations = itertools.islice(info[i]["pv"], 5)
-                        print(board.variation_san(firstFiveVariations) + " (" + str(score) + ")")
-                 
+                        if cycleNum < len(mainLineMoves) - 1:
+                            print()
+                            print(getMovePrefix(cycleNum + 1) + board.san(mainLineMoves[cycleNum + 1]))
+
+                    # Analyze the board for the next best move
+                    info = engine.analyse(board, chess.engine.Limit(depth=20), multipv=3)
+
+                    if cycleNum < len(mainLineMoves):
+                        for i in range(0, len(info)):
+                            if info[i]["score"].relative.score() != None:
+                                score = info[i]["score"].relative.score() / 100.0 if info[i]["score"].turn else info[i]["score"].relative.score() / -100.0
+                            else:
+                                score = "#" + str(info[i]["score"].relative.mate()) if info[i]["score"].turn else "#" + str(info[i]["score"].relative.mate() * -1)
+                            
+                            trimmedVariations = itertools.islice(info[i]["pv"], 1) # Increase 1 if you want to show more moves beyond candidate move.
+                            print(board.variation_san(trimmedVariations) + " (" + str(score) + ")")
+                    
+                    if (winner == chess.WHITE and cycleNum == 0):
+                        board.push(move)
+            
             cycleNum += 1
 
     # Shutdown engine
