@@ -51,6 +51,65 @@ def getMovePrefix(cycleNum):
     else:
         return str(int(cycleNum / 2 + 1)) + ". "
 
+def getPointValues(info, heroMove, board, winner):
+    pointDict = {}
+    heroScore = None;
+
+    # Taking first pass through engine scorings to compose and extract scores, as well as flag hero score
+    for i in range(0, len(info)):
+        engineMove = board.san(info[i]["pv"][0])
+        score = None
+        if info[i]["score"].relative.score() != None:
+            score = info[i]["score"].relative.score() / 100.0 if info[i]["score"].turn else info[i]["score"].relative.score() / -100.0
+        else:
+            score = "#" + str(info[i]["score"].relative.mate()) if info[i]["score"].turn else "#" + str(info[i]["score"].relative.mate() * -1)
+            score = (1000 - float(score[1:])) if winner == chess.WHITE else (-1000 - float(score[1:]))
+        
+        pointDict[i] = { "score": score, "points": 1 if heroMove == engineMove else None, "engineMove": engineMove }
+        if heroMove == engineMove:
+            heroScore = score
+
+    # This captures the less common scenario where the hero made a move, not considered top 3 choice by the engine.
+    if heroScore == None:
+        # Locating and matching score of 3rd best move as seed.
+        i = len(info)-1
+        heroScore = pointDict[i]["score"]
+
+        # Applying appropriate penalty to correlate score with being just outside of top3 scores, based on score scaling.
+        if heroScore > 900 or heroScore < -900:
+            heroScore = heroScore - 1 if winner == chess.WHITE else heroScore + 1
+        else:
+            heroScore = heroScore - 0.1 if winner == chess.WHITE else heroScore + 0.1
+
+    # Making second final pass through engine scorings, only using the iterator as a mechanism to backfill missing point assignments in pointDict
+    for i in range(0, len(info)):
+        if pointDict[i]["points"] == None:
+            scoreDiff = heroScore - pointDict[i]["score"]
+
+            if winner == chess.BLACK:
+                if scoreDiff <= 0.5 and scoreDiff >= -0.5:
+                    pointDict[i]["points"] = 1
+                elif scoreDiff > 0.5 and scoreDiff <= 1:
+                    pointDict[i]["points"] = 1.5
+                elif scoreDiff > 1:
+                    pointDict[i]["points"] = 2
+                elif scoreDiff < -0.5 and scoreDiff >= -1:
+                    pointDict[i]["points"] = 0.5
+                elif scoreDiff < -1:
+                    pointDict[i]["points"] = 0
+            else:
+                if scoreDiff <= 0.5 and scoreDiff >= -0.5:
+                    pointDict[i]["points"] = 1
+                elif scoreDiff > 0.5 and scoreDiff <= 1:
+                    pointDict[i]["points"] = 0.5
+                elif scoreDiff > 1:
+                    pointDict[i]["points"] = 0
+                elif scoreDiff < -0.5 and scoreDiff >= -1:
+                    pointDict[i]["points"] = 1.5
+                elif scoreDiff < -1:
+                    pointDict[i]["points"] = 2
+    return pointDict
+
 def main():
     # Start chess engine process (optionally from local install such as: /usr/local/bin/stockfish)
     engine = chess.engine.SimpleEngine.popen_uci("./bin/stockfish")
@@ -92,19 +151,21 @@ def main():
                         if cycleNum < len(mainLineMoves) - 1:
                             print()
                             print(getMovePrefix(cycleNum + 1) + board.san(mainLineMoves[cycleNum + 1]))
+                    
+                    if (cycleNum > 8 and winner == chess.WHITE) or (cycleNum > 9 and winner == chess.BLACK):
+                        # Analyze the board for the next best move
+                        info = engine.analyse(board, chess.engine.Limit(depth=22), multipv=3)
 
-                    # Analyze the board for the next best move
-                    info = engine.analyse(board, chess.engine.Limit(depth=22), multipv=3)
-
-                    if cycleNum < len(mainLineMoves):
-                        for i in range(0, len(info)):
-                            if info[i]["score"].relative.score() != None:
-                                score = info[i]["score"].relative.score() / 100.0 if info[i]["score"].turn else info[i]["score"].relative.score() / -100.0
-                            else:
-                                score = "#" + str(info[i]["score"].relative.mate()) if info[i]["score"].turn else "#" + str(info[i]["score"].relative.mate() * -1)
-                            
-                            trimmedVariations = itertools.islice(info[i]["pv"], 1) # Increase 1 if you want to show more moves beyond candidate move.
-                            print("{:-<12s}> {:<15s}".format(board.variation_san(trimmedVariations) + " ", "(" + str(score) + ")"))
+                        if cycleNum < len(mainLineMoves):
+                            pointDict = getPointValues(info, board.san(mainLineMoves[cycleNum + 1]), board, winner)
+                            for i in range(0, len(info)):
+                                if info[i]["score"].relative.score() != None:
+                                    score = info[i]["score"].relative.score() / 100.0 if info[i]["score"].turn else info[i]["score"].relative.score() / -100.0
+                                else:
+                                    score = "#" + str(info[i]["score"].relative.mate()) if info[i]["score"].turn else "#" + str(info[i]["score"].relative.mate() * -1)
+                                
+                                trimmedVariations = itertools.islice(info[i]["pv"], 1) # Increase 1 if you want to show more moves beyond candidate move.
+                                print("{:-<12s}> {:<9s} {:<5s}".format(board.variation_san(trimmedVariations) + " ", "(" + str(score) + ")", "[" + str(pointDict[i]["points"]) + "]"))
                     
                     if (winner == chess.WHITE and cycleNum == 0):
                         board.push(move)

@@ -1,0 +1,17 @@
+[Event "Vienna"]
+[Site "Vienna AUH"]
+[Date "1898.??.??"]
+[EventDate "?"]
+[Round "?"]
+[Result "0-1"]
+[White "Gustav Zeissl"]
+[Black "Walter von Walthoffen"]
+[ECO "C63"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "36"]
+
+1. e4 e5 2. Nf3 Nc6 3. Bb5 f5 4. d4 fxe4 5. Nxe5 Nxe5 6. dxe5
+c6 7. Bc4 Qa5+ 8. Nc3 Qxe5 9. O-O d5 10. Bb3 Nf6 11. Be3 Bd6
+12. g3 Bg4 13. Qd2 Bf3 14. Bf4 Qh5 15. Nd1 Qh3 16. Ne3 Ng4
+17. Rfe1 Qxh2+ 18. Kf1 Qh1# 0-1
