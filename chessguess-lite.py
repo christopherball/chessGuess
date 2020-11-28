@@ -26,13 +26,13 @@ def parseWinner(game):
         return None
 
 def printHeader(game):
-    print("-----------------------------------------")
+    print("-----------------------------")
     if game.headers["Event"] != None and game.headers["Event"] != "":
-        print("Event: " + game.headers["Event"])
+        print((game.headers["Event"][:26] + '...') if len(game.headers["Event"]) > 26 else game.headers["Event"])
     if game.headers["Site"] != None and game.headers["Site"] != "":
-        print("Site: " + game.headers["Site"])
+        print((game.headers["Site"][:26] + '...') if len(game.headers["Site"]) > 26 else game.headers["Site"])
     if game.headers["Date"] != None and game.headers["Date"] != "":
-        print("Date: " + game.headers["Date"])
+        print(game.headers["Date"])
     if game.headers["Round"] != None and game.headers["Round"] != "":
         print("Round: " + game.headers["Round"])
     if game.headers["White"] != None and game.headers["White"] != "":
@@ -43,9 +43,7 @@ def printHeader(game):
         print("Result: " + game.headers["Result"])
     if game.headers["ECO"] != None and game.headers["ECO"] != "":
         print("ECO: " + game.headers["ECO"])
-    if game.headers["PlyCount"] != None and game.headers["PlyCount"] != "":
-        print("PlyCount: " + game.headers["PlyCount"])
-    print("-----------------------------------------")
+    print("-----------------------------")
 
 def getMovePrefix(cycleNum):
     if cycleNum % 2 != 0:
@@ -106,7 +104,7 @@ def main():
                                 score = "#" + str(info[i]["score"].relative.mate()) if info[i]["score"].turn else "#" + str(info[i]["score"].relative.mate() * -1)
                             
                             trimmedVariations = itertools.islice(info[i]["pv"], 1) # Increase 1 if you want to show more moves beyond candidate move.
-                            print("{:-<12s}> {:<10s}".format(board.variation_san(trimmedVariations) + " ", "(" + str(score) + ")"))
+                            print("{:-<12s}> {:<15s}".format(board.variation_san(trimmedVariations) + " ", "(" + str(score) + ")"))
                     
                     if (winner == chess.WHITE and cycleNum == 0):
                         board.push(move)
