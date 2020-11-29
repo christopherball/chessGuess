@@ -156,6 +156,9 @@ def main():
                         
                         if cycleNum < len(mainLineMoves) - 1:
                             print()
+                            if (cycleNum + 1) % 5 == 0:
+                                print("|" + board.fen())
+                                print()
                             print(getMovePrefix(cycleNum + 1) + board.san(mainLineMoves[cycleNum + 1]))
                     
                     if (cycleNum > 8 and winner == chess.WHITE) or (cycleNum > 9 and winner == chess.BLACK):
