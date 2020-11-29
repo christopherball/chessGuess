@@ -32,18 +32,19 @@ def printHeader(game):
     if game.headers["Site"] != None and game.headers["Site"] != "":
         print((game.headers["Site"][:26] + '...') if len(game.headers["Site"]) > 26 else game.headers["Site"])
     if game.headers["Date"] != None and game.headers["Date"] != "":
-        print(game.headers["Date"])
+        print((game.headers["Date"][:26] + '...') if len(game.headers["Date"]) > 26 else game.headers["Date"])
     if game.headers["Round"] != None and game.headers["Round"] != "":
-        print("Round: " + game.headers["Round"])
+        print((game.headers["Round"][:26] + '...') if len(game.headers["Round"]) > 26 else game.headers["Round"])
     if game.headers["White"] != None and game.headers["White"] != "":
-        print("White: " + game.headers["White"])
+        print((game.headers["White"][:26] + '...') if len(game.headers["White"]) > 26 else game.headers["White"])
     if game.headers["Black"] != None and game.headers["Black"] != "":
-        print("Black: " + game.headers["Black"])
+        print((game.headers["Black"][:26] + '...') if len(game.headers["Black"]) > 26 else game.headers["Black"])
     if game.headers["Result"] != None and game.headers["Result"] != "":
         print("Result: " + game.headers["Result"])
     if game.headers["ECO"] != None and game.headers["ECO"] != "":
         print("ECO: " + game.headers["ECO"])
     print("-----------------------------")
+    print()
 
 def getMovePrefix(cycleNum):
     if cycleNum % 2 != 0:
@@ -138,6 +139,11 @@ def main():
                     elif (winner == chess.BLACK and cycleNum % 2 == 0): 
                         if cycleNum > 0:
                             print()
+                            if cycleNum % 5 == 0:
+                                board.pop()
+                                print("|" + board.fen())
+                                print()
+                                board.push(move)
                         print(getMovePrefix(cycleNum) + board.san(board.pop()))
                         board.push(move)
 
@@ -169,7 +175,6 @@ def main():
                     
                     if (winner == chess.WHITE and cycleNum == 0):
                         board.push(move)
-            
             cycleNum += 1
         print()
     # Shutdown engine
