@@ -171,7 +171,7 @@ def main():
                         board.push(move)
             
             cycleNum += 1
-
+        print()
     # Shutdown engine
     engine.quit()
 
