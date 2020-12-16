@@ -36,6 +36,7 @@
             var allLines = [];
             var winner = null;
 
+            // Copy paste function for async fetching a file from an URL source. 
             async function* makeTextFileLineIterator(fileURL) {
                 const utf8Decoder = new TextDecoder('utf-8');
                 const response = await fetch(fileURL);
@@ -63,11 +64,13 @@
                     startIndex = re.lastIndex;
                 }
                 if (startIndex < chunk.length) {
-                    // last line didn't end in a newline char
+                    // Last line didn't end in a newline char
                     yield chunk.substr(startIndex);
                 }
             }
 
+            // Responsible for walking every line of the supplied gtm file(s) and determining how to 
+            // add that content to the DOM.
             function parseData() {
                 var ccNode = document.getElementById("contentsContainer");
                 var insidePreElement = false;
@@ -75,6 +78,7 @@
 
                 for (var i = 0; i < allLines.length; i++) {
                     if (!insidePreElement) {
+                        // If this is a FEN string line in my gtm file, handle a specific way
                         if (allLines[i][0] == "|") {
                             var chessBoardDiv = document.createElement("div");
                             chessBoardDiv.id = "chessBoard" + i;
@@ -95,13 +99,18 @@
                     }
                     
                     if (insidePreElement) {
-                        //Checking for result string
+                        // Checking for result string
                         if (allLines[i].startsWith("Result:"))
                             winner = allLines[i].includes("0-1") ? "black" : "white";
+                       
+                        // If the current line is a real move in the game, then bold it.
+                        var searchPattern = /^\d+(\.\.\.|\. )/gi;
+                        if (searchPattern.test(allLines[i]) && !allLines[i].trimEnd().endsWith("]"))
+                            preNode.innerHTML += "<b>" + allLines[i] + "</b>\n";
+                        // Else display the line exactly as it is without additional formatting.
+                        else preNode.innerHTML += allLines[i] +"\n";
 
-                        preNode.innerHTML += allLines[i] +"\n";
-
-                        //Test condition to break apart pre elements
+                        // Test condition to break apart pre elements
                         if (allLines[i].length == 0) {
                             ccNode.appendChild(preNode);
                             insidePreElement = false;
