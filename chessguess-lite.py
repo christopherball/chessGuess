@@ -4,6 +4,7 @@ import chess
 import chess.engine
 import chess.pgn
 import itertools
+import math
 
 # arg1:val1 arg2:val2
 def parseArguments(args):
@@ -25,25 +26,27 @@ def parseWinner(game):
     else:
         return None
 
-def printHeader(game):
-    print("-----------------------------")
+def printHeader(game, plyCount, winner):
+    print("―――――――――――――――――――――――――――――")
     if game.headers["Event"] != None and game.headers["Event"] != "":
         print((game.headers["Event"][:26] + '...') if len(game.headers["Event"]) > 26 else game.headers["Event"])
     if game.headers["Site"] != None and game.headers["Site"] != "":
         print((game.headers["Site"][:26] + '...') if len(game.headers["Site"]) > 26 else game.headers["Site"])
-    if game.headers["Date"] != None and game.headers["Date"] != "":
-        print((game.headers["Date"][:26] + '...') if len(game.headers["Date"]) > 26 else game.headers["Date"])
     if game.headers["Round"] != None and game.headers["Round"] != "":
-        print((game.headers["Round"][:26] + '...') if len(game.headers["Round"]) > 26 else game.headers["Round"])
+        print("Round: " + (game.headers["Round"][:19] + '...') if len(game.headers["Round"]) > 19 else "Round: " + game.headers["Round"])
     if game.headers["White"] != None and game.headers["White"] != "":
         print((game.headers["White"][:26] + '...') if len(game.headers["White"]) > 26 else game.headers["White"])
     if game.headers["Black"] != None and game.headers["Black"] != "":
         print((game.headers["Black"][:26] + '...') if len(game.headers["Black"]) > 26 else game.headers["Black"])
+    if game.headers["Date"] != None and game.headers["Date"] != "":
+        print((game.headers["Date"][:26] + '...') if len(game.headers["Date"]) > 26 else game.headers["Date"])
     if game.headers["Result"] != None and game.headers["Result"] != "":
         print("Result: " + game.headers["Result"])
     if game.headers["ECO"] != None and game.headers["ECO"] != "":
         print("ECO: " + game.headers["ECO"])
-    print("-----------------------------")
+    pointsPossible = math.floor((plyCount / 2) - 5) if winner == chess.BLACK else math.ceil((plyCount / 2) - 5)
+    print("Total Points Earned:    / " + str(pointsPossible))
+    print("―――――――――――――――――――――――――――――")
     print()
 
 def getMovePrefix(cycleNum):
@@ -126,7 +129,7 @@ def main():
         mainLineMoves.append(move)
 
     if winner != None:
-        printHeader(game)
+        printHeader(game, len(mainLineMoves), winner)
 
         for move in mainLineMoves:
             board.push(move)
@@ -134,7 +137,7 @@ def main():
                 if ((winner == chess.WHITE and cycleNum == 0) or (winner == chess.WHITE and cycleNum % 2 != 0) or (winner == chess.BLACK and cycleNum % 2 == 0)):
                     # If it's whites' first move for a white winner game
                     if (winner == chess.WHITE and cycleNum == 0):
-                        print(getMovePrefix(cycleNum) + board.san(board.pop()))
+                        print(getMovePrefix(cycleNum) + " " + board.san(board.pop()))
                     # Else If it's whites' turn for a black winner game
                     elif (winner == chess.BLACK and cycleNum % 2 == 0): 
                         if cycleNum > 0:
@@ -144,7 +147,7 @@ def main():
                                 print("|" + board.fen())
                                 print()
                                 board.push(move)
-                        print(getMovePrefix(cycleNum) + board.san(board.pop()))
+                        print(getMovePrefix(cycleNum) + " " + board.san(board.pop()))
                         board.push(move)
 
                         if cycleNum < len(mainLineMoves) - 1:
@@ -159,8 +162,8 @@ def main():
                             if (cycleNum + 1) % 5 == 0:
                                 print("|" + board.fen())
                                 print()
-                            print(getMovePrefix(cycleNum + 1) + board.san(mainLineMoves[cycleNum + 1]))
-                    
+                            print(getMovePrefix(cycleNum + 1) + " " + board.san(mainLineMoves[cycleNum + 1]))
+                    # If we are past the opening cycleNum plys, it's time to start analyzing top 3 moves from here onward
                     if (cycleNum > 8 and winner == chess.WHITE) or (cycleNum > 9 and winner == chess.BLACK):
                         # Analyze the board for the next best move
                         info = engine.analyse(board, chess.engine.Limit(depth=22), multipv=3)
@@ -174,7 +177,8 @@ def main():
                                     score = "#" + str(info[i]["score"].relative.mate()) if info[i]["score"].turn else "#" + str(info[i]["score"].relative.mate() * -1)
                                 
                                 trimmedVariations = itertools.islice(info[i]["pv"], 1) # Increase 1 if you want to show more moves beyond candidate move.
-                                print("{:-<12s}> {:<9s} {:<5s}".format(board.variation_san(trimmedVariations) + " ", "(" + str(score) + ")", "[" + str(pointDict[i]["points"]) + "]"))
+                                move = board.variation_san(trimmedVariations) if cycleNum % 2 == 0 else board.variation_san(trimmedVariations).replace(" ","  ")
+                                print("{:―<12s}▸ {:<9s} {:<5s}".format(move + " ", "(" + str(score) + ")", "[" + str(pointDict[i]["points"]) + "]"))
                     
                     if (winner == chess.WHITE and cycleNum == 0):
                         board.push(move)
