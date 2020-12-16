@@ -26,28 +26,32 @@ def parseWinner(game):
     else:
         return None
 
-def printHeader(game, plyCount, winner):
-    print("―――――――――――――――――――――――――――――")
+def queuePrint(str):
+    printQueue.append(str)
+
+def printHeader(game):
+    queuePrint("―――――――――――――――――――――――――――――")
     if game.headers["Event"] != None and game.headers["Event"] != "":
-        print((game.headers["Event"][:26] + '...') if len(game.headers["Event"]) > 26 else game.headers["Event"])
+        queuePrint((game.headers["Event"][:26] + '...') if len(game.headers["Event"]) > 26 else game.headers["Event"])
     if game.headers["Site"] != None and game.headers["Site"] != "":
-        print((game.headers["Site"][:26] + '...') if len(game.headers["Site"]) > 26 else game.headers["Site"])
+        queuePrint((game.headers["Site"][:26] + '...') if len(game.headers["Site"]) > 26 else game.headers["Site"])
     if game.headers["Round"] != None and game.headers["Round"] != "":
-        print("Round: " + (game.headers["Round"][:19] + '...') if len(game.headers["Round"]) > 19 else "Round: " + game.headers["Round"])
+        queuePrint("Round: " + (game.headers["Round"][:19] + '...') if len(game.headers["Round"]) > 19 else "Round: " + game.headers["Round"])
     if game.headers["White"] != None and game.headers["White"] != "":
-        print((game.headers["White"][:26] + '...') if len(game.headers["White"]) > 26 else game.headers["White"])
+        queuePrint((game.headers["White"][:26] + '...') if len(game.headers["White"]) > 26 else game.headers["White"])
     if game.headers["Black"] != None and game.headers["Black"] != "":
-        print((game.headers["Black"][:26] + '...') if len(game.headers["Black"]) > 26 else game.headers["Black"])
+        queuePrint((game.headers["Black"][:26] + '...') if len(game.headers["Black"]) > 26 else game.headers["Black"])
     if game.headers["Date"] != None and game.headers["Date"] != "":
-        print((game.headers["Date"][:26] + '...') if len(game.headers["Date"]) > 26 else game.headers["Date"])
+        queuePrint((game.headers["Date"][:26] + '...') if len(game.headers["Date"]) > 26 else game.headers["Date"])
     if game.headers["Result"] != None and game.headers["Result"] != "":
-        print("Result: " + game.headers["Result"])
+        queuePrint("Result: " + game.headers["Result"])
     if game.headers["ECO"] != None and game.headers["ECO"] != "":
-        print("ECO: " + game.headers["ECO"])
-    pointsPossible = math.floor((plyCount / 2) - 5) if winner == chess.BLACK else math.ceil((plyCount / 2) - 5)
-    print("Total Points Earned:    / " + str(pointsPossible))
-    print("―――――――――――――――――――――――――――――")
-    print()
+        queuePrint("ECO: " + game.headers["ECO"])
+    
+    queuePrint("Winner Points Earned: totalHeroPoints")
+    queuePrint("Your Points Earned:")
+    queuePrint("―――――――――――――――――――――――――――――")
+    queuePrint("")
 
 def getMovePrefix(cycleNum):
     if cycleNum % 2 != 0:
@@ -57,9 +61,8 @@ def getMovePrefix(cycleNum):
 
 def getPointValues(info, heroMove, board, winner):
     pointDict = {}
-    heroScore = None;
 
-    # Taking first pass through engine scorings to compose and extract scores, as well as flag hero score
+    # Taking first pass through engine scorings to compose and extract scores
     for i in range(0, len(info)):
         engineMove = board.san(info[i]["pv"][0])
         score = None
@@ -69,49 +72,40 @@ def getPointValues(info, heroMove, board, winner):
             score = "#" + str(info[i]["score"].relative.mate()) if info[i]["score"].turn else "#" + str(info[i]["score"].relative.mate() * -1)
             score = (1000 - float(score[1:])) if winner == chess.WHITE else (-1000 - float(score[1:]))
         
-        pointDict[i] = { "score": score, "points": 1 if heroMove == engineMove else None, "engineMove": engineMove }
-        if heroMove == engineMove:
-            heroScore = score
+        pointDict[i] = { "score": score, "points": None, "engineMove": engineMove }
 
-    # This captures the less common scenario where the hero made a move, not considered top 3 choice by the engine.
-    if heroScore == None:
-        # Locating and matching score of 3rd best move as seed.
-        i = len(info)-1
-        heroScore = pointDict[i]["score"]
-
-        # Applying appropriate penalty to correlate score with being just outside of top3 scores, based on score scaling.
-        if heroScore > 900 or heroScore < -900:
-            heroScore = heroScore - 1 if winner == chess.WHITE else heroScore + 1
-        else:
-            heroScore = heroScore - 0.1 if winner == chess.WHITE else heroScore + 0.1
-
-    # Making second final pass through engine scorings, only using the iterator as a mechanism to backfill missing point assignments in pointDict
+    # Making second pass through engine scorings, only using the iterator as a mechanism to backfill missing point assignments in pointDict
     for i in range(0, len(info)):
         if pointDict[i]["points"] == None:
-            scoreDiff = heroScore - pointDict[i]["score"]
-
-            if winner == chess.BLACK:
-                if scoreDiff <= 0.5 and scoreDiff >= -0.5:
-                    pointDict[i]["points"] = 1
-                elif scoreDiff > 0.5 and scoreDiff <= 1:
-                    pointDict[i]["points"] = 1.5
-                elif scoreDiff > 1:
-                    pointDict[i]["points"] = 2
-                elif scoreDiff < -0.5 and scoreDiff >= -1:
-                    pointDict[i]["points"] = 0.5
-                elif scoreDiff < -1:
-                    pointDict[i]["points"] = 0
+            if i == 0:
+                pointDict[i]["points"] = 3
             else:
-                if scoreDiff <= 0.5 and scoreDiff >= -0.5:
-                    pointDict[i]["points"] = 1
-                elif scoreDiff > 0.5 and scoreDiff <= 1:
-                    pointDict[i]["points"] = 0.5
-                elif scoreDiff > 1:
-                    pointDict[i]["points"] = 0
-                elif scoreDiff < -0.5 and scoreDiff >= -1:
-                    pointDict[i]["points"] = 1.5
-                elif scoreDiff < -1:
-                    pointDict[i]["points"] = 2
+                scoreDiff = pointDict[0]["score"] - pointDict[i]["score"]
+                if winner == chess.BLACK:
+                    if scoreDiff >= -0.25:
+                        pointDict[i]["points"] = 3
+                    elif scoreDiff >= -0.50:
+                        pointDict[i]["points"] = 2
+                    elif scoreDiff >= -1:
+                        pointDict[i]["points"] = 1
+                    else:
+                        pointDict[i]["points"] = 0
+                else:
+                    if scoreDiff <= 0.25:
+                        pointDict[i]["points"] = 3
+                    elif scoreDiff <= 0.50:
+                        pointDict[i]["points"] = 2
+                    elif scoreDiff <= 1:
+                        pointDict[i]["points"] = 1
+                    else:
+                        pointDict[i]["points"] = 0
+    
+    # Making third and final pass through engine scorings, with the sole purpose of updating our global tally of how the hero performed
+    global totalHeroPoints 
+    for i in range(0, len(info)):
+        if pointDict[i]["engineMove"] == heroMove:
+            totalHeroPoints += pointDict[i]["points"]
+
     return pointDict
 
 def main():
@@ -129,7 +123,7 @@ def main():
         mainLineMoves.append(move)
 
     if winner != None:
-        printHeader(game, len(mainLineMoves), winner)
+        printHeader(game)
 
         for move in mainLineMoves:
             board.push(move)
@@ -137,32 +131,32 @@ def main():
                 if ((winner == chess.WHITE and cycleNum == 0) or (winner == chess.WHITE and cycleNum % 2 != 0) or (winner == chess.BLACK and cycleNum % 2 == 0)):
                     # If it's whites' first move for a white winner game
                     if (winner == chess.WHITE and cycleNum == 0):
-                        print(getMovePrefix(cycleNum) + " " + board.san(board.pop()))
+                        queuePrint(getMovePrefix(cycleNum) + " " + board.san(board.pop()))
                     # Else If it's whites' turn for a black winner game
                     elif (winner == chess.BLACK and cycleNum % 2 == 0): 
                         if cycleNum > 0:
-                            print()
+                            queuePrint("")
                             if cycleNum % 5 == 0:
                                 board.pop()
-                                print("|" + board.fen())
-                                print()
+                                queuePrint("|" + board.fen())
+                                queuePrint("")
                                 board.push(move)
-                        print(getMovePrefix(cycleNum) + " " + board.san(board.pop()))
+                        queuePrint(getMovePrefix(cycleNum) + " " + board.san(board.pop()))
                         board.push(move)
 
                         if cycleNum < len(mainLineMoves) - 1:
-                            print(getMovePrefix(cycleNum + 1) + board.san(mainLineMoves[cycleNum + 1]))
+                            queuePrint(getMovePrefix(cycleNum + 1) + board.san(mainLineMoves[cycleNum + 1]))
                     # Else If it's blacks' turn for a white winner game
                     elif (winner == chess.WHITE and cycleNum % 2 != 0): 
-                        print(getMovePrefix(cycleNum) + board.san(board.pop()))
+                        queuePrint(getMovePrefix(cycleNum) + board.san(board.pop()))
                         board.push(move)
                         
                         if cycleNum < len(mainLineMoves) - 1:
-                            print()
+                            queuePrint("")
                             if (cycleNum + 1) % 5 == 0:
-                                print("|" + board.fen())
-                                print()
-                            print(getMovePrefix(cycleNum + 1) + " " + board.san(mainLineMoves[cycleNum + 1]))
+                                queuePrint("|" + board.fen())
+                                queuePrint("")
+                            queuePrint(getMovePrefix(cycleNum + 1) + " " + board.san(mainLineMoves[cycleNum + 1]))
                     # If we are past the opening cycleNum plys, it's time to start analyzing top 3 moves from here onward
                     if (cycleNum > 8 and winner == chess.WHITE) or (cycleNum > 9 and winner == chess.BLACK):
                         # Analyze the board for the next best move
@@ -178,17 +172,26 @@ def main():
                                 
                                 trimmedVariations = itertools.islice(info[i]["pv"], 1) # Increase 1 if you want to show more moves beyond candidate move.
                                 move = board.variation_san(trimmedVariations) if cycleNum % 2 == 0 else board.variation_san(trimmedVariations).replace(" ","  ")
-                                print("{:―<12s}▸ {:<9s} {:<5s}".format(move + " ", "(" + str(score) + ")", "[" + str(pointDict[i]["points"]) + "]"))
+                                queuePrint("{:―<12s}▸ {:<9s} {:<5s}".format(move + " ", "(" + str(score) + ")", "[" + str(pointDict[i]["points"]) + "]"))
                     
                     if (winner == chess.WHITE and cycleNum == 0):
                         board.push(move)
             cycleNum += 1
-        print()
+        queuePrint("")
     # Shutdown engine
     engine.quit()
 
+    # Update printQueue with totalHeroPoints and then print results
+    for i in range(0, len(printQueue)):
+        if "totalHeroPoints" in printQueue[i]:
+            printQueue[i] = printQueue[i].replace("totalHeroPoints", str(totalHeroPoints))
+
+        print(printQueue[i])
+
 # Globals
 scriptArguments = parseArguments(sys.argv)
+printQueue = []
+totalHeroPoints = 0
 
 # Start program
 main()
