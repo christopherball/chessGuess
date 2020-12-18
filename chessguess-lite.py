@@ -38,18 +38,18 @@ def printHeader(game):
     if game.headers["Round"] != None and game.headers["Round"] != "":
         queuePrint("Round: " + (game.headers["Round"][:19] + '...') if len(game.headers["Round"]) > 19 else "Round: " + game.headers["Round"])
     if game.headers["White"] != None and game.headers["White"] != "":
-        queuePrint((game.headers["White"][:26] + '...') if len(game.headers["White"]) > 26 else game.headers["White"])
+        queuePrint(("W: " + game.headers["White"][:23] + '...') if len(game.headers["White"]) > 23 else ("W: " + game.headers["White"]))
     if game.headers["Black"] != None and game.headers["Black"] != "":
-        queuePrint((game.headers["Black"][:26] + '...') if len(game.headers["Black"]) > 26 else game.headers["Black"])
+        queuePrint(("B: " + game.headers["Black"][:23] + '...') if len(game.headers["Black"]) > 23 else ("B: " + game.headers["Black"]))
     if game.headers["Date"] != None and game.headers["Date"] != "":
-        queuePrint((game.headers["Date"][:26] + '...') if len(game.headers["Date"]) > 26 else game.headers["Date"])
+        queuePrint(("Date: " + game.headers["Date"][:20] + '...') if len(game.headers["Date"]) > 20 else ("Date: " + game.headers["Date"]))
     if game.headers["Result"] != None and game.headers["Result"] != "":
         queuePrint("Result: " + game.headers["Result"])
     if game.headers["ECO"] != None and game.headers["ECO"] != "":
         queuePrint("ECO: " + game.headers["ECO"])
     
-    queuePrint("Winner Points Earned: totalHeroPoints")
-    queuePrint("Your Points Earned:")
+    queuePrint("Winner Points: totalHeroPoints")
+    queuePrint("Your Points: ")
     queuePrint("―――――――――――――――――――――――――――――")
     queuePrint("")
 
@@ -84,18 +84,18 @@ def getPointValues(info, heroMove, board, winner):
                 if winner == chess.BLACK:
                     if scoreDiff >= -0.25:
                         pointDict[i]["points"] = 3
-                    elif scoreDiff >= -0.50:
+                    elif scoreDiff >= -0.75:
                         pointDict[i]["points"] = 2
-                    elif scoreDiff >= -1:
+                    elif scoreDiff >= -1.25:
                         pointDict[i]["points"] = 1
                     else:
                         pointDict[i]["points"] = 0
                 else:
                     if scoreDiff <= 0.25:
                         pointDict[i]["points"] = 3
-                    elif scoreDiff <= 0.50:
+                    elif scoreDiff <= 0.75:
                         pointDict[i]["points"] = 2
-                    elif scoreDiff <= 1:
+                    elif scoreDiff <= 1.25:
                         pointDict[i]["points"] = 1
                     else:
                         pointDict[i]["points"] = 0
@@ -160,7 +160,7 @@ def main():
                     # If we are past the opening cycleNum plys, it's time to start analyzing top 3 moves from here onward
                     if (cycleNum > 8 and winner == chess.WHITE) or (cycleNum > 9 and winner == chess.BLACK):
                         # Analyze the board for the next best move
-                        info = engine.analyse(board, chess.engine.Limit(depth=22), multipv=3)
+                        info = engine.analyse(board, chess.engine.Limit(depth=24), multipv=3)
 
                         if cycleNum < len(mainLineMoves):
                             pointDict = getPointValues(info, board.san(mainLineMoves[cycleNum + 1]), board, winner)
