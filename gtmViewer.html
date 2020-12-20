@@ -1,23 +1,7 @@
 <html>
     <head>
         <link rel="stylesheet" href="includes/css/chessboard-1.0.0.min.css">
-        <style>
-            .multiColumn {
-                column-count: 3;
-                column-fill: auto;
-                height: 20000px; /* Arbitrarily large height to force column-fill:auto to work. */
-            }
-
-            .chessBoard {
-                -webkit-column-break-inside: avoid;
-                width: 220px;
-            }
-
-            pre {
-                -webkit-column-break-inside: avoid;
-                margin: 0;
-            }
-        </style>
+        <link rel="stylesheet" href="includes/css/gtmViewer.css">
     </head>
     <body>
         <div class="multiColumn">
@@ -28,116 +12,7 @@
         </div>
         <script src="includes/js/jquery.min.js"></script>
         <script src="includes/js/chessboard-1.0.0.js"></script>
-        <script>
-            (function() {
-                main();
-            })();
-
-            var allLines = [];
-            var winner = null;
-
-            // Copy paste function for async fetching a file from an URL source. 
-            async function* makeTextFileLineIterator(fileURL) {
-                const utf8Decoder = new TextDecoder('utf-8');
-                const response = await fetch(fileURL);
-                const reader = response.body.getReader();
-                let { value: chunk, done: readerDone } = await reader.read();
-                chunk = chunk ? utf8Decoder.decode(chunk) : '';
-
-                const re = /\n|\r|\r\n/gm;
-                let startIndex = 0;
-                let result;
-
-                for (;;) {
-                    let result = re.exec(chunk);
-                    if (!result) {
-                        if (readerDone) {
-                            break;
-                        }
-                        let remainder = chunk.substr(startIndex);
-                        ({ value: chunk, done: readerDone } = await reader.read());
-                        chunk = remainder + (chunk ? utf8Decoder.decode(chunk) : '');
-                        startIndex = re.lastIndex = 0;
-                        continue;
-                    }
-                    yield chunk.substring(startIndex, result.index);
-                    startIndex = re.lastIndex;
-                }
-                if (startIndex < chunk.length) {
-                    // Last line didn't end in a newline char
-                    yield chunk.substr(startIndex);
-                }
-            }
-
-            // Responsible for walking every line of the supplied gtm file(s) and determining how to 
-            // add that content to the DOM.
-            function parseData() {
-                var ccNode = document.getElementById("contentsContainer");
-                var insidePreElement = false;
-                var preNode = null;
-
-                for (var i = 0; i < allLines.length; i++) {
-                    if (!insidePreElement) {
-                        // If this is a FEN string line in my gtm file, handle a specific way
-                        if (allLines[i][0] == "|") {
-                            var chessBoardDiv = document.createElement("div");
-                            chessBoardDiv.id = "chessBoard" + i;
-                            chessBoardDiv.className = "chessBoard";
-                            ccNode.appendChild(chessBoardDiv);
-
-                            var config = {
-                                position: allLines[i].substring(1),
-                                showNotation: false,
-                                orientation: winner
-                            }
-                            var board = Chessboard('chessBoard' + i, config)
-                        }
-                        // Else begin construction of a new pre element
-                        else {
-                            preNode = document.createElement("pre");
-                            insidePreElement = true;
-                        }
-                    }
-                    
-                    if (insidePreElement) {
-                        // Checking for result string
-                        if (allLines[i].startsWith("Result:"))
-                            winner = allLines[i].includes("0-1") ? "black" : "white";
-                       
-                        // If the current line is a real move in the game, then bold it.
-                        var searchPattern = /^\d+(\.\.\.|\. )/gi;
-                        if (searchPattern.test(allLines[i]) && !allLines[i].trimEnd().endsWith("]"))
-                            preNode.innerHTML += "<b>" + allLines[i] + "</b>\n";
-                        // Else display the line exactly as it is without additional formatting.
-                        else preNode.innerHTML += allLines[i] +"\n";
-
-                        // Test condition to break apart pre elements
-                        if (allLines[i].length == 0) {
-                            ccNode.appendChild(preNode);
-                            insidePreElement = false;
-                        }
-                    }
-                }
-            }
-
-            function main() {
-                var URL = window.URL || window.webkitURL;
-                var fileInputNode = document.querySelector('#files');
-
-                var loadSelectedChessPubFile = async function(event) {
-                    for (var i = 0; i < this.files.length; i++) {
-                        var objectURL = URL.createObjectURL(this.files[i]); 
-                        for await (let line of makeTextFileLineIterator(objectURL)) {
-                            allLines.push(line);
-                        }
-                    }
-             
-                    fileInputNode.remove();
-                    parseData();
-                };
-              
-                fileInputNode.addEventListener('change', loadSelectedChessPubFile, false);
-            }
-        </script>
+        <script src="includes/js/qrcode.js"></script>
+        <script src="includes/js/gtmViewer.js"></script>
     </body>
 </html>

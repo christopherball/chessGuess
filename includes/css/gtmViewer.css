@@ -1,0 +1,30 @@
+.multiColumn {
+    column-count: 3;
+    column-fill: auto;
+    height: 20000px; /* Arbitrarily large height to force column-fill:auto to work. */
+}
+
+.chessBoard {
+    -webkit-column-break-inside: avoid;
+    width: 180px;
+}
+
+pre {
+    -webkit-column-break-inside: avoid;
+    margin: 0;
+}
+
+.qrCode {
+    -webkit-column-break-inside: avoid;
+    margin-top: 1px;
+}
+
+.dynamicTable {
+    -webkit-column-break-inside: avoid;
+}
+
+@page {
+    @bottom-right {
+        content: counter(page);
+    }
+}
