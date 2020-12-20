@@ -22,9 +22,3 @@ pre {
 .dynamicTable {
     -webkit-column-break-inside: avoid;
 }
-
-@page {
-    @bottom-right {
-        content: counter(page);
-    }
-}
