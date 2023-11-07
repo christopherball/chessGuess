@@ -1,4 +1,4 @@
-# Chess Guess  
+# chessGuess  
 
 This program is designed for custom "guess the move" self-study chess needs from books and other resources.  The goal of this program is to automatically analyze real chess games of high-level play, comparing your guesses with the winner's choices alongside engine top choices, producing a CSV output for further analysis and charting.  
 
