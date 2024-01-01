@@ -4,6 +4,7 @@
 
 var allLines = [];
 var winner = null;
+var enableAnalysisLinking = false;
 
 // Copy paste function for async fetching a file from an URL source.
 async function* makeTextFileLineIterator(fileURL) {
@@ -52,19 +53,6 @@ function parseData() {
                 var chessBoardDiv = document.createElement("div");
                 chessBoardDiv.id = "chessBoard" + i;
                 chessBoardDiv.className = "chessBoard";
-                chessBoardDiv.setAttribute(
-                    "data-fen",
-                    allLines[i].substring(1)
-                );
-                chessBoardDiv.addEventListener(
-                    "click",
-                    function () {
-                        location.href =
-                            "https://lichess.org/analysis/" +
-                            encodeURI(this.dataset.fen);
-                    },
-                    false
-                );
 
                 var boardConfig = {
                     position: allLines[i].substring(1),
@@ -77,7 +65,18 @@ function parseData() {
                 dynamicTable.className = "dynamicTable";
                 var dynamicTr = document.createElement("tr");
                 var dynamicTd1 = document.createElement("td");
-                dynamicTd1.appendChild(chessBoardDiv);
+
+                // The following, if enabled, hotlinks each board to direct analysis on Lichess.
+                // Not enabled by default as it dramatically increases PDF file size strangely.
+                if (enableAnalysisLinking) {
+                    var chessBoardLinkWrapper = document.createElement("a");
+                    chessBoardLinkWrapper.href =
+                        "https://lichess.org/analysis/" +
+                        encodeURI(allLines[i].substring(1));
+                    chessBoardLinkWrapper.appendChild(chessBoardDiv);
+                    dynamicTd1.appendChild(chessBoardLinkWrapper);
+                } else dynamicTd1.appendChild(chessBoardDiv);
+
                 dynamicTr.appendChild(dynamicTd1);
                 dynamicTable.appendChild(dynamicTr);
                 ccNode.appendChild(dynamicTable);
