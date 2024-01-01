@@ -2,11 +2,11 @@
 
 if [ $1 = "all" ]; then
     trap "exit" INT
-    for entry in `ls ./guess`; do
+    for entry in `ls ./pgn`; do
         baseFile=${entry%.*}
         echo 'Processing: ' $baseFile
-        python3 chessguess.py pgn:pgn/$baseFile.pgn guess:guess/$baseFile.guess
+        python3 chessguess.py pgn:pgn/$baseFile.pgn > output/$baseFile.gtm
     done
 else
-    python3 chessguess.py pgn:pgn/$1.pgn guess:guess/$1.guess
+    python3 chessguess.py pgn:pgn/$1.pgn > output/$1.gtm
 fi

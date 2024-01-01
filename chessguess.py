@@ -3,30 +3,9 @@ from subprocess import call
 import chess
 import chess.engine
 import chess.pgn
-import re
-from io import StringIO
-import csv
-from string import digits
+import itertools
+import math
 
-def readFileToString(fileName):
-    with open(fileName, 'r') as myFile:
-        return myFile.read()
-
-def getMinimalPGNString(fileContents):
-    trimmedFileString = re.sub('\[.*\]', '', fileContents)
-    trimmedFileString = re.sub('\{.*\}', '', trimmedFileString)
-    trimmedFileString = trimmedFileString.replace('\n', ' ')
-    trimmedFileString = re.sub('\s+', ' ', trimmedFileString).strip()
-    return trimmedFileString
-
-def rewindAndSubstitute(minPGNString, moveNum, move, playAs):
-    if (playAs == 'White'):
-        minPGNString = re.sub(str(moveNum) + '\..+', str(moveNum) + '. ', minPGNString)
-    else:
-        minPGNString = re.match('.*( )' + str(moveNum) + '\.( )[^ ]+( )', minPGNString).group()
-
-    minPGNString += move
-    return minPGNString
 
 # arg1:val1 arg2:val2
 def parseArguments(args):
@@ -35,225 +14,282 @@ def parseArguments(args):
     for index in range(0, len(args)):
         tupleArgs = args[index].split(":")
 
-        if (len(tupleArgs) == 2):
+        if len(tupleArgs) == 2:
             arguments[tupleArgs[0]] = tupleArgs[1]
 
     return arguments
 
-def getOutputFileName(filePath):
-    trimmed = re.sub(".*\/", "", filePath)
-    trimmed = re.sub("\..*", "", trimmed)
-    return trimmed + ".csv"
 
-# Setup chess board
-def setupBoard(game, targetMoveNum, playAs, pushAll):
-    board = game.board()
+def parseWinner(game):
+    if game.headers["Result"] == "1-0":
+        return chess.WHITE
+    elif game.headers["Result"] == "0-1":
+        return chess.BLACK
+    else:
+        return None
 
-    #Path only walked for guess move analysis since PGN is gradually built up each stage
-    if (pushAll):
-        for move in game.mainline_moves():
-            board.push(move)
 
-        return board
+def queuePrint(str):
+    printQueue.append(str)
 
-    currentMoveNum = 1
 
-    # Current move is for white
-    isHalfMove = False
+def printHeader(game):
+    queuePrint("―――――――――――――――――――――――――――――")
+    if game.headers["Event"] != None and game.headers["Event"] != "":
+        queuePrint(
+            (game.headers["Event"][:26] + "...")
+            if len(game.headers["Event"]) > 26
+            else game.headers["Event"]
+        )
+    if game.headers["Site"] != None and game.headers["Site"] != "":
+        queuePrint(
+            (game.headers["Site"][:26] + "...")
+            if len(game.headers["Site"]) > 26
+            else game.headers["Site"]
+        )
+    if game.headers["Round"] != None and game.headers["Round"] != "":
+        queuePrint(
+            "Round: " + (game.headers["Round"][:19] + "...")
+            if len(game.headers["Round"]) > 19
+            else "Round: " + game.headers["Round"]
+        )
+    if game.headers["White"] != None and game.headers["White"] != "":
+        queuePrint(
+            ("W: " + game.headers["White"][:23] + "...")
+            if len(game.headers["White"]) > 23
+            else ("W: " + game.headers["White"])
+        )
+    if game.headers["Black"] != None and game.headers["Black"] != "":
+        queuePrint(
+            ("B: " + game.headers["Black"][:23] + "...")
+            if len(game.headers["Black"]) > 23
+            else ("B: " + game.headers["Black"])
+        )
+    if game.headers["Date"] != None and game.headers["Date"] != "":
+        queuePrint(
+            ("Date: " + game.headers["Date"][:20] + "...")
+            if len(game.headers["Date"]) > 20
+            else ("Date: " + game.headers["Date"])
+        )
+    if game.headers["Result"] != None and game.headers["Result"] != "":
+        queuePrint("Result: " + game.headers["Result"])
+    if game.headers["ECO"] != None and game.headers["ECO"] != "":
+        queuePrint("ECO: " + game.headers["ECO"])
 
-    for move in game.mainline_moves():
-        if ((currentMoveNum < targetMoveNum) or (currentMoveNum == targetMoveNum and playAs == 'Black' and isHalfMove == False)):
-            board.push(move)
+    queuePrint("Winner Points: totalHeroPoints")
+    queuePrint("―――――――――――――――――――――――――――――")
+    queuePrint("")
 
-            if (isHalfMove):
-                currentMoveNum += 1
-                isHalfMove = False
-            else:
-                isHalfMove = True
+
+def getMovePrefix(cycleNum):
+    if cycleNum % 2 != 0:
+        return str(int(cycleNum / 2 + 0.5)) + "..."
+    else:
+        return str(int(cycleNum / 2 + 1)) + ". "
+
+
+def getPointValues(info, heroMove, board, winner):
+    pointDict = {}
+
+    # Taking first pass through engine scorings to compose and extract scores
+    for i in range(0, len(info)):
+        engineMove = board.san(info[i]["pv"][0])
+        score = None
+        if info[i]["score"].relative.score() != None:
+            score = (
+                info[i]["score"].relative.score() / 100.0
+                if info[i]["score"].turn
+                else info[i]["score"].relative.score() / -100.0
+            )
         else:
-            break
+            score = (
+                "#" + str(info[i]["score"].relative.mate())
+                if info[i]["score"].turn
+                else "#" + str(info[i]["score"].relative.mate() * -1)
+            )
+            score = (
+                (1000 - float(score[1:]))
+                if winner == chess.WHITE
+                else (-1000 - float(score[1:]))
+            )
 
-    return board
+        pointDict[i] = {"score": score, "points": None, "engineMove": engineMove}
 
-# Read all lines from a given file into an in-memory list
-def readLines(filePath):
-    lines = []
-    with open(filePath, "r") as f:
-        for line in f:
-            lines.append(line.rstrip('\n'))
+    # Making second pass through engine scorings, only using the iterator as a mechanism to backfill missing point assignments in pointDict
+    for i in range(0, len(info)):
+        if pointDict[i]["points"] == None:
+            if i == 0:
+                pointDict[i]["points"] = 3
+            else:
+                scoreDiff = pointDict[0]["score"] - pointDict[i]["score"]
+                if winner == chess.BLACK:
+                    if scoreDiff >= -0.25:
+                        pointDict[i]["points"] = 3
+                    elif scoreDiff >= -0.75:
+                        pointDict[i]["points"] = 2
+                    elif scoreDiff >= -1.25:
+                        pointDict[i]["points"] = 1
+                    else:
+                        pointDict[i]["points"] = 0
+                else:
+                    if scoreDiff <= 0.25:
+                        pointDict[i]["points"] = 3
+                    elif scoreDiff <= 0.75:
+                        pointDict[i]["points"] = 2
+                    elif scoreDiff <= 1.25:
+                        pointDict[i]["points"] = 1
+                    else:
+                        pointDict[i]["points"] = 0
 
-    return lines
+    # Making third and final pass through engine scorings, with the sole purpose of updating our global tally of how the hero performed
+    global totalHeroPoints
+    for i in range(0, len(info)):
+        if pointDict[i]["engineMove"] == heroMove:
+            totalHeroPoints += pointDict[i]["points"]
 
-def loadMoves(game):
-    moves = []
-    for i in game.main_line():
-        moves.append(i)
+    return pointDict
 
-    return moves
 
-# Returns the string color of the player currently playing on the board.
-def getTurnColor(board):
-    return 'White' if board.turn else 'Black'
-
-# Determines whether endgame state has been reached.
-def isEndgame(fen):
-    fenLite = fen.split(" ")[0].replace("/","").replace("p","").replace("P","").replace("k","").replace("K","")
-    removeDigits = str.maketrans('', '', digits)
-    fenLiter = fenLite.translate(removeDigits)
-    bScore = 0
-    wScore = 0
-
-    for i in fenLiter:
-        if i == 'Q':
-            wScore += 9
-        elif i == 'R':
-            wScore += 5
-        elif i == 'B' or i == 'N':
-            wScore += 3
-        elif i == 'q':
-            bScore += 9
-        elif i == 'r':
-            bScore += 5
-        elif i == 'b' or i == 'n':
-            bScore += 3
-
-    return True if wScore <= 6 and bScore <= 6 else False
-
-# Used to generate a single record of analysis (one record per guess, actual, or best - combined later in process).
-def generateRecordResult(engine, game, currentMoveNum, playAs, recordType, currentGuessMove):
-    # Tell engine the current position of the board and display it
-    board = setupBoard(game, currentMoveNum, playAs, True if recordType == 'Guess' else False)
-
-    # Generating our full record set
-    record = {}
-    record['DatePlayed'] = guessArguments['datePlayed']
-    record['PlayAs'] = guessArguments['playAs']
-    scoreDivider = 100.0 if playAs == 'White' else -100.0
-    scoreMultiplier = 1 if playAs == 'White' else -1
-    depth = 22 if isEndgame(board.fen()) == False else 30
-    info = engine.analyse(board, chess.engine.Limit(depth=depth))
-    scoreObj = info["score"].white() if playAs == 'White' else info["score"].black()
-    
-    if (recordType == "Guess"):
-        record['MoveNum'] = currentMoveNum
-        record['PostGuessBoardFEN'] = board.fen()
-        record['GuessScore'] = scoreObj.score() / scoreDivider if info["score"].is_mate() == False else ""
-        record['GuessMove'] = currentGuessMove
-        record['GuessMate'] = scoreObj.mate() * scoreMultiplier if info["score"].is_mate() == True else ""
-
-    if (recordType == "Actual"):
-        record['GameIdentifier'] = scriptArguments["pgn"]
-        record['PostActualBoardFEN'] = board.fen()
-        record['ActualScore'] = scoreObj.score() / scoreDivider if info["score"].is_mate() == False else ""
-        record['ActualMove'] = board.san(board.pop())
-        record['ActualMate'] = scoreObj.mate() * scoreMultiplier if info["score"].is_mate() == True else ""
-
-    if (recordType == "Best"):
-        record['PreGuessBoardFEN'] = board.fen()
-        record['BestScore'] = scoreObj.score() / scoreDivider if info["score"].is_mate() == False else ""
-        record['BestMove'] = str(board.san(info["pv"][0]))
-        record['BestMate'] = (scoreObj.mate() - 1) * scoreMultiplier if info["score"].is_mate() == True else ""
-
-    return record
-
-def generateCSVOutput(dictionaries, fileName):
-    with open(fileName, 'w', newline='') as f:
-        fieldNames = [
-            'DatePlayed',
-            'GameIdentifier',
-            'PlayAs',
-            'MoveNum',
-            'GuessMove',
-            'ActualMove',
-            'BestMove', 
-            'GuessScore',
-            'ActualScore',
-            'BestScore', 
-            'GuessMate',
-            'ActualMate',
-            'BestMate', 
-            'PreGuessBoardFEN', 
-            'PostGuessBoardFEN',
-            'PostActualBoardFEN']
-        writer = csv.DictWriter(f, fieldnames=fieldNames)
-        writer.writeheader()
-        writer.writerows(dictionaries)
-
-# For times where the guessMove matched actualMove, or actualMove matched bestMove, or guessMove matched bestMove, scores should match
-def alignScores(bestDict, guessDict, actualDict):
-    if (bestDict['BestMove'] == guessDict['GuessMove'] and bestDict['BestMove'] == actualDict['ActualMove'] and bestDict['BestScore'] != ''):
-        avgScore = round((bestDict['BestScore'] + guessDict['GuessScore'] + actualDict['ActualScore']) / 3, 2)
-        bestDict['BestScore'] = avgScore
-        guessDict['GuessScore'] = avgScore
-        actualDict['ActualScore'] = avgScore
-    if (bestDict['BestMove'] == guessDict['GuessMove'] and bestDict['BestScore'] != ''):
-        avgScore = round((bestDict['BestScore'] + guessDict['GuessScore']) / 2, 2)
-        bestDict['BestScore'] = avgScore
-        guessDict['GuessScore'] = avgScore
-    if (bestDict['BestMove'] == actualDict['ActualMove'] and bestDict['BestScore'] != ''):
-        avgScore = round((bestDict['BestScore'] + actualDict['ActualScore']) / 2, 2)
-        bestDict['BestScore'] = avgScore
-        actualDict['ActualScore'] = avgScore
-    if (guessDict['GuessMove'] == actualDict['ActualMove'] and guessDict['GuessScore'] != ''):
-        avgScore = round((guessDict['GuessScore'] + actualDict['ActualScore']) / 2, 2)
-        guessDict['GuessScore'] = avgScore
-        actualDict['ActualScore'] = avgScore
-
-    return {**bestDict, **guessDict, **actualDict}
-
-# Print iterations progress
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
-    # Print New Line on Complete
-    if iteration == total: 
-        print()
-
-# Entry point method
 def main():
     # Start chess engine process (optionally from local install such as: /usr/local/bin/stockfish)
-    engine = chess.engine.SimpleEngine.popen_uci("./bin/stockfish")
+    engine = chess.engine.SimpleEngine.popen_uci("./bin/stockfish-13")
+    engine.configure({"Threads": 2, "Hash": 4096})
 
-    # Initialize specified engine
-    engine.configure({"Threads":2, "Hash": 4096})
+    pgn = open(scriptArguments["pgn"])
+    game = chess.pgn.read_game(pgn)
+    board = game.board()
+    winner = parseWinner(game)
+    cycleNum = 0
+    mainLineMoves = []
+    for move in game.mainline_moves():
+        mainLineMoves.append(move)
 
-    # Generate analysis records
-    finalResultRecordDicts = []
-    startingMove = int(guessArguments["startingMove"])
-    finalMove = startingMove + len(guessLines) - 2
-    guessIndex = 1
-    printProgressBar(0, finalMove - startingMove, prefix = 'Progress:', suffix = 'Complete', length = 50)
-    
-    for currentMoveNum in range(startingMove, startingMove + len(guessLines) - 1):
-        game = chess.pgn.read_game(StringIO(minPGNString))
-        resultDict1 = generateRecordResult(engine, game, currentMoveNum, guessArguments["playAs"], "Best", "")
+    if winner != None:
+        printHeader(game)
 
-        rewoundMinPGNString = rewindAndSubstitute(minPGNString, currentMoveNum, guessLines[guessIndex], guessArguments["playAs"])
-        game = chess.pgn.read_game(StringIO(rewoundMinPGNString))
-        resultDict2 = generateRecordResult(engine, game, currentMoveNum, guessArguments["playAs"], "Guess", guessLines[guessIndex])
-        guessIndex += 1
+        for move in mainLineMoves:
+            board.push(move)
+            if not board.is_game_over():
+                if (
+                    (winner == chess.WHITE and cycleNum == 0)
+                    or (winner == chess.WHITE and cycleNum % 2 != 0)
+                    or (winner == chess.BLACK and cycleNum % 2 == 0)
+                ):
+                    # If it's whites' first move for a white winner game
+                    if winner == chess.WHITE and cycleNum == 0:
+                        queuePrint(
+                            getMovePrefix(cycleNum) + " " + board.san(board.pop())
+                        )
+                    # Else If it's whites' turn for a black winner game
+                    elif winner == chess.BLACK and cycleNum % 2 == 0:
+                        if cycleNum > 0:
+                            queuePrint("")
+                            if (
+                                cycleNum % diagramEveryXMoves == 0
+                            ):  # Controls how frequently diagrams appear
+                                board.pop()
+                                queuePrint("|" + board.fen())
+                                queuePrint("")
+                                board.push(move)
+                        queuePrint(
+                            getMovePrefix(cycleNum) + " " + board.san(board.pop())
+                        )
+                        board.push(move)
 
-        game = chess.pgn.read_game(StringIO(minPGNString))
-        resultDict3 = generateRecordResult(engine, game, currentMoveNum if guessArguments["playAs"] == 'White' else currentMoveNum + 1, 'Black' if guessArguments["playAs"] == 'White' else 'White', "Actual", "")
-       
-        combinedResultDict = alignScores(resultDict1, resultDict2, resultDict3)
-        finalResultRecordDicts.append(combinedResultDict)
-        printProgressBar(currentMoveNum - startingMove, finalMove - startingMove, prefix = 'Progress:', suffix = 'Complete', length = 50)
+                        if cycleNum < len(mainLineMoves) - 1:
+                            queuePrint(
+                                getMovePrefix(cycleNum + 1)
+                                + board.san(mainLineMoves[cycleNum + 1])
+                            )
+                    # Else If it's blacks' turn for a white winner game
+                    elif winner == chess.WHITE and cycleNum % 2 != 0:
+                        queuePrint(getMovePrefix(cycleNum) + board.san(board.pop()))
+                        board.push(move)
 
-    # Generate csv output for external analysis
-    fileName = getOutputFileName(scriptArguments["pgn"])
-    generateCSVOutput(finalResultRecordDicts, "./output/" + fileName)
+                        if cycleNum < len(mainLineMoves) - 1:
+                            queuePrint("")
+                            if (
+                                cycleNum + 1
+                            ) % diagramEveryXMoves == 0:  # Controls how frequently diagrams appear
+                                queuePrint("|" + board.fen())
+                                queuePrint("")
+                            queuePrint(
+                                getMovePrefix(cycleNum + 1)
+                                + " "
+                                + board.san(mainLineMoves[cycleNum + 1])
+                            )
+                    # If we are past the opening cycleNum plys, it's time to start analyzing top X moves from here onward
+                    if (cycleNum > 8 and winner == chess.WHITE) or (
+                        cycleNum > 9 and winner == chess.BLACK
+                    ):
+                        # Analyze the board for the next best move
+                        info = engine.analyse(
+                            board, chess.engine.Limit(depth=24), multipv=analyzeXMoves
+                        )
 
+                        if cycleNum < len(mainLineMoves):
+                            pointDict = getPointValues(
+                                info,
+                                board.san(mainLineMoves[cycleNum + 1]),
+                                board,
+                                winner,
+                            )
+                            for i in range(0, len(info)):
+                                if info[i]["score"].relative.score() != None:
+                                    score = (
+                                        info[i]["score"].relative.score() / 100.0
+                                        if info[i]["score"].turn
+                                        else info[i]["score"].relative.score() / -100.0
+                                    )
+                                else:
+                                    score = (
+                                        "#" + str(info[i]["score"].relative.mate())
+                                        if info[i]["score"].turn
+                                        else "#"
+                                        + str(info[i]["score"].relative.mate() * -1)
+                                    )
+
+                                trimmedVariations = itertools.islice(
+                                    info[i]["pv"], 1
+                                )  # Increase 1 if you want to show more moves beyond candidate move.
+                                move = (
+                                    board.variation_san(trimmedVariations)
+                                    if cycleNum % 2 == 0
+                                    else board.variation_san(trimmedVariations).replace(
+                                        " ", "  "
+                                    )
+                                )
+                                queuePrint(
+                                    "{:―<12s}▸ {:<9s} {:<5s}".format(
+                                        move + " ",
+                                        "(" + str(score) + ")",
+                                        "[" + str(pointDict[i]["points"]) + "]",
+                                    )
+                                )
+
+                    if winner == chess.WHITE and cycleNum == 0:
+                        board.push(move)
+            cycleNum += 1
+        queuePrint("")
+    # Shutdown engine
     engine.quit()
+
+    # Update printQueue with totalHeroPoints and then print results
+    for i in range(0, len(printQueue)):
+        if "totalHeroPoints" in printQueue[i]:
+            printQueue[i] = printQueue[i].replace(
+                "totalHeroPoints", str(totalHeroPoints)
+            )
+
+        print(printQueue[i])
+
 
 # Globals
 scriptArguments = parseArguments(sys.argv)
-fileString = readFileToString(scriptArguments["pgn"])
-minPGNString = getMinimalPGNString(fileString)
-guessLines = readLines(scriptArguments["guess"])
-guessArguments = parseArguments(guessLines[0].split())
+printQueue = []
+totalHeroPoints = 0
+diagramEveryXMoves = 4
+analyzeXMoves = 5
 
 # Start program
 main()
