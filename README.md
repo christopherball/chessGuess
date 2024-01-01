@@ -22,6 +22,10 @@ Download your favorite chess matches (PGN format) from sites like chessgames.com
 
 When analysis completes, a proprietary .gtm result file will have been created for each .pgn file.
 
+### Scoring
+
+TBD
+
 ### Browser View
 
 With the `gtmViewer.html` file open in VSCode, click the `Go Live` button in the bottom right to load the Viewer. Click on the "Choose Files" button and load (one or more) your .gtm files. The browser (tested on Chrome, Brave, and lightly on Safari) will render the results for preview and preparation for the final step.
@@ -30,7 +34,7 @@ With the `gtmViewer.html` file open in VSCode, click the `Go Live` button in the
 
 1. Right-click on the Viewer with your contents already rendered, load your developer tools, and toggle on the `device toolbar` button (2nd from left).
    ![Toggle Device Toolbar](./img/readme-devicetoolbar.png)
-2. Set the dropdown to `responsive`, with dimensions of 245 \* 1000. You should see something like the following:
+2. Set the dropdown to `responsive`, with dimensions of 750 \* (none). You should see something like the following:
    ![Device Preview](./img/readme-devicepreview.png)
 3. Click the vertical `...` menu in the developer tool area and select `Run Command` and search for `screenshot` and choose `Capture Full Size Screenshot`:
    ![Run Command](./img/readme-runcommand.png)

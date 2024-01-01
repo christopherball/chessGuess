@@ -288,7 +288,7 @@ def main():
 scriptArguments = parseArguments(sys.argv)
 printQueue = []
 totalHeroPoints = 0
-diagramEveryXMoves = 4
+diagramEveryXMoves = 2
 analyzeXMoves = 5
 
 # Start program

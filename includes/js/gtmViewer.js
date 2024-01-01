@@ -52,6 +52,19 @@ function parseData() {
                 var chessBoardDiv = document.createElement("div");
                 chessBoardDiv.id = "chessBoard" + i;
                 chessBoardDiv.className = "chessBoard";
+                chessBoardDiv.setAttribute(
+                    "data-fen",
+                    allLines[i].substring(1)
+                );
+                chessBoardDiv.addEventListener(
+                    "click",
+                    function () {
+                        location.href =
+                            "https://lichess.org/analysis/" +
+                            encodeURI(this.dataset.fen);
+                    },
+                    false
+                );
 
                 var boardConfig = {
                     position: allLines[i].substring(1),
@@ -59,45 +72,16 @@ function parseData() {
                     orientation: winner,
                 };
 
-                // Adding dynamically generated QR code of said board
-                var xmlns = "http://www.w3.org/2000/svg";
-                var svgElem = document.createElementNS(xmlns, "svg");
-                svgElem.setAttribute(
-                    "xmlns:xlink",
-                    "http://www.w3.org/1999/xlink"
-                );
-                svgElem.setAttribute("class", "qrCode");
-                svgElem.setAttribute("height", 50);
-                svgElem.setAttribute("width", 50);
-                var g = document.createElementNS(xmlns, "g");
-                g.setAttribute("id", "qrCode" + i);
-                svgElem.appendChild(g);
-
-                var qrCodeConfig = {
-                    text: allLines[i].substring(1),
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.L,
-                    useSVG: true,
-                };
-
-                // Adding the chess board and qrcode to the DOM, contained within a table.
+                // Adding the chess board to the DOM, contained within a table.
                 var dynamicTable = document.createElement("table");
                 dynamicTable.className = "dynamicTable";
                 var dynamicTr = document.createElement("tr");
                 var dynamicTd1 = document.createElement("td");
-                var dynamicTd2 = document.createElement("td");
                 dynamicTd1.appendChild(chessBoardDiv);
-                dynamicTd2.appendChild(svgElem);
                 dynamicTr.appendChild(dynamicTd1);
-                dynamicTr.appendChild(dynamicTd2);
                 dynamicTable.appendChild(dynamicTr);
                 ccNode.appendChild(dynamicTable);
                 var board = Chessboard("chessBoard" + i, boardConfig);
-                var qrCode = new QRCode(
-                    document.getElementById("qrCode" + i),
-                    qrCodeConfig
-                );
             }
             // Else begin construction of a new pre element
             else {
@@ -112,12 +96,31 @@ function parseData() {
                 winner = allLines[i].includes("0-1") ? "black" : "white";
 
             // If the current line is a real move in the game, then bold it.
-            var searchPattern = /^\d+(\.\.\.|\. )/gi;
+            var searchPatternW = /^\d+(\.\s\s)/gi;
+            var searchPatternB = /^\d+(\.\.\.)/gi;
             if (
-                searchPattern.test(allLines[i]) &&
+                searchPatternW.test(allLines[i]) &&
                 !allLines[i].trimEnd().endsWith("]")
-            )
-                preNode.innerHTML += "<b>" + allLines[i] + "</b>\n";
+            ) {
+                var classN = winner == "white" ? "winnerMove" : "loserMove";
+                preNode.innerHTML +=
+                    "<div class='primaryMove'><span class='" +
+                    classN +
+                    "'>" +
+                    allLines[i] +
+                    "</span></div>\n";
+            } else if (
+                searchPatternB.test(allLines[i]) &&
+                !allLines[i].trimEnd().endsWith("]")
+            ) {
+                var classN = winner == "black" ? "winnerMove" : "loserMove";
+                preNode.innerHTML +=
+                    "<div class='primaryMove'><span class='" +
+                    classN +
+                    "'>" +
+                    allLines[i] +
+                    "</span></div>\n";
+            }
             // Else display the line exactly as it is without additional formatting.
             else preNode.innerHTML += allLines[i] + "\n";
 

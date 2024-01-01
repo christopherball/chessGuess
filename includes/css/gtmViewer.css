@@ -1,11 +1,18 @@
-body {
-    background-color: #d2d2d2;
-}
-
 @media print {
     body {
-        background-color: #d2d2d2;
+        background-color: #d2d2d2 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
+}
+
+@page {
+    size: 2.54in 710in; /* <- You can change these dimensions */
+    margin: 0;
+}
+
+body {
+    background-color: #d2d2d2;
 }
 
 #fileLoader {
@@ -14,12 +21,12 @@ body {
 
 .multiColumn {
     column-count: 1;
-    column-fill: balance-all;
+    column-fill: balance;
 }
 
 .chessBoard {
     -webkit-column-break-inside: avoid;
-    width: 220px; /* 180px if displaying qrCode, 220px if not */
+    width: 220px;
 }
 
 pre {
@@ -27,12 +34,22 @@ pre {
     margin: 0;
 }
 
-.qrCode {
-    -webkit-column-break-inside: avoid;
-    margin-top: 1px;
-    display: none; /* Comment out to display qrCode */
-}
-
 .dynamicTable {
     -webkit-column-break-inside: avoid;
+}
+
+.winnerMove {
+    color: black;
+    font-weight: bold;
+    border: 2px black solid;
+    border-left: 0px;
+    padding: 1px 1px 1px 0;
+}
+
+.loserMove {
+    font-weight: bold;
+}
+
+.primaryMove {
+    height: 4px;
 }
