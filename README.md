@@ -43,7 +43,7 @@ With the `gtmViewer.html` file open in VSCode, click the `Go Live` button in the
 
 1. Load the gtm analysis results using the `gtmViewer.html` and simply browser print to PDF the webpage.
 2. Due to the CSS configurations, you should see a very tall sliver (rather than a standard paper-sized PDF).
-3. All of the preview results can be adjusted to fit on a single 1-page PDF to eliminate page breaks. In order to make height adjustments, simply update the following as required:
+3. All of the preview results can be adjusted to fit on a single 1-page PDF to eliminate page breaks. In order to make height adjustments, simply update the following as required within the `gtmViewer.css` file:
    ![Paper Size Settings](./img/readme-papersize.png)
 4. End result will look like `exampleGames.pdf` in the `./output` folder.
 5. Bonus: If you'd like to activate chessboard hotlinks within the PDF so that you can click / tap on them to take you directly to an analysis board (see `exampleGamesHotlinked.pdf` in the `./output` folder), you can flip this setting by updating `enableAnalysisLinking = false;` to `enableAnalysisLinking = true;` within gtmViewer.js. Be aware that this setting is disabled by default as it generates PDF file sizes an order of magnitude larger (due to the way browsers generate PDFs based on DOM content).
