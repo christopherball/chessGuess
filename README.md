@@ -1,6 +1,8 @@
 # Chess Guess
 
-This program is custom-designed to generate pre-computed "guess the move" (gtm) chess study materials in PDF format that players can reference when studying from books and other resources. For example purposes, this code base includes the first 10 PGN games (all freely available) based on the book "Logical Chess Move By Move" by Chernev. Upon analysis completion, generated gtm results are placed in the `./output` folder.
+This program is custom-designed to generate pre-computed "guess the move" (GTM) chess study materials in PDF format that players can reference when studying from books and other resources. For example purposes, this code base includes the first 10 PGN games (all freely available) based on the book "Logical Chess Move By Move" by Chernev. Upon analysis completion, generated GTM results are placed in the `./output` folder.
+
+Said generated GTM results are then used to generate deliberately narrow-strip single-page PDFs that can be scrolled through with your phone as you study (whether over the board, online, or alongside a book in hand).
 
 ## How It Works
 
@@ -41,7 +43,7 @@ With the `gtmViewer.html` file open in VSCode, click the `Go Live` button in the
 
 ### PDF Generation
 
-1. Load the gtm analysis results using the `gtmViewer.html` and simply browser print to PDF the webpage.
+1. Load the GTM analysis results using the `gtmViewer.html` and simply browser print to PDF the webpage.
 2. Due to the CSS configurations, you should see a very tall sliver (rather than a standard paper-sized PDF).
 3. All of the preview results can be adjusted to fit on a single 1-page PDF to eliminate page breaks. In order to make height adjustments, simply update the following as required within the `gtmViewer.css` file:
    ![Paper Size Settings](./img/readme-papersize.png)
