@@ -4,7 +4,7 @@ This program is custom-designed to generate pre-computed "guess the move" (gtm) 
 
 ## How It Works
 
-Locate -> Analyze -> Browser View -> PDF Generation
+Locate -> Analyze -> Scoring -> Browser View -> PDF Generation
 
 ![PDF Sample](/img/readme-pdfsample.png)
 
