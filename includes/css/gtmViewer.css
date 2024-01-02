@@ -7,7 +7,7 @@
 }
 
 @page {
-    size: 2.54in 710in; /* <- You can change these dimensions */
+    size: 2.54in 710in; /* <- Update the 2nd dimension (height) to match your content. */
     margin: 0;
 }
 

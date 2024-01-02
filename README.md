@@ -1,10 +1,12 @@
 # Chess Guess
 
-This program is custom-designed to generate pre-computed "guess the move" (gtm) chess materials that players can reference when studying from books and other resources. For example purposes, this code base includes the first 10 games (PGN format) from the book "Logical Chess Move By Move" by Chernev. Upon analysis completion, generated gtm results are placed in the `./output` folder.
+This program is custom-designed to generate pre-computed "guess the move" (gtm) chess study materials in PDF format that players can reference when studying from books and other resources. For example purposes, this code base includes the first 10 PGN games (all freely available) based on the book "Logical Chess Move By Move" by Chernev. Upon analysis completion, generated gtm results are placed in the `./output` folder.
 
 ## How It Works
 
-Locate -> Analyze -> Browser View -> Image Generation
+Locate -> Analyze -> Browser View -> PDF Generation
+
+![PDF Sample](/img/readme-pdfsample.png)
 
 ### Locate
 
@@ -24,23 +26,27 @@ When analysis completes, a proprietary .gtm result file will have been created f
 
 ### Scoring
 
-TBD
+For every board position that the recorded game winner faces, each is evaluated by Stockfish (using a depth of 24 ply to strike a balance between accuracy and performance). The resulting strongest move is then considered the benchmark by which each of the top 5 moves are evaluated and scored.
+
+-   `Score difference` <= 25 centipawns = 3 points
+-   25 < `Score difference` <= 75 centipawns = 2 points
+-   75 < `Score difference` <= 125 centipawns = 1 points
+-   `Score difference` > 125 centipawns = 0 points
+
+The moves chosen by the recorded game winner are automatically scored and tallied as the last part of each game entry. As a player plays guess the move, they can record their own scores and compare their total at the end to that of the game winner to measure approximate game performance.
 
 ### Browser View
 
 With the `gtmViewer.html` file open in VSCode, click the `Go Live` button in the bottom right to load the Viewer. Click on the "Choose Files" button and load (one or more) your .gtm files. The browser (tested on Chrome, Brave, and lightly on Safari) will render the results for preview and preparation for the final step.
 
-### Image Generation
+### PDF Generation
 
-1. Right-click on the Viewer with your contents already rendered, load your developer tools, and toggle on the `device toolbar` button (2nd from left).
-   ![Toggle Device Toolbar](./img/readme-devicetoolbar.png)
-2. Set the dropdown to `responsive`, with dimensions of 750 \* (none). You should see something like the following:
-   ![Device Preview](./img/readme-devicepreview.png)
-3. Click the vertical `...` menu in the developer tool area and select `Run Command` and search for `screenshot` and choose `Capture Full Size Screenshot`:
-   ![Run Command](./img/readme-runcommand.png)
-   ![Capture Full Size Screenshot](./img/readme-screenshot.png)
-
-The saved .png file is designed to be perfectly suited to zoom in to the width of a phone so that you can gradually vertically scroll through results as you guess the move.
+1. Load the gtm analysis results using the `gtmViewer.html` and simply browser print to PDF the webpage.
+2. Due to the CSS configurations, you should see a very tall sliver (rather than a standard paper-sized PDF).
+3. All of the preview results can be adjusted to fit on a single 1-page PDF to eliminate page breaks. In order to make height adjustments, simply update the following as required:
+   ![Paper Size Settings](./img/readme-papersize.png)
+4. End result will look like `exampleGames.pdf` in the `./output` folder.
+5. Bonus: If you'd like to activate chessboard hotlinks within the PDF so that you can click / tap on them to take you directly to an analysis board (see `exampleGamesHotlinked.pdf` in the `./output` folder), you can flip this setting by updating `enableAnalysisLinking = false;` to `enableAnalysisLinking = true;` within gtmViewer.js. Be aware that this setting is disabled by default as it generates PDF file sizes an order of magnitude larger (due to the way browsers generate PDFs based on DOM content).
 
 ## Installation & Setup
 
