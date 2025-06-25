@@ -54,7 +54,8 @@ def process_game(filename, color):
             piece_type = get_piece_type(move, board)
             white_part = f"{piece_type:<8}"
         else:
-            white_part = f"{board.san(move):<8}"
+            #white_part = f"{board.san(move):<8}"
+            white_part = f"{'...':<8}"
 
         board.push(move)
         i += 1
@@ -68,7 +69,8 @@ def process_game(filename, color):
                 piece_type = get_piece_type(move, board)
                 black_part = f"{piece_type:<8}"
             else:
-                black_part = f"{board.san(move):<8}"
+                #black_part = f"{board.san(move):<8}"
+                black_part = f"{'...':<8}"
 
             board.push(move)
             i += 1
