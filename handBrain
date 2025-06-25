@@ -1,0 +1,3 @@
+#!/bin/bash
+
+pbpaste > temp.pgn; python3 handBrainPGNConverter.py temp.pgn $1 | pbcopy; rm temp.pgn
